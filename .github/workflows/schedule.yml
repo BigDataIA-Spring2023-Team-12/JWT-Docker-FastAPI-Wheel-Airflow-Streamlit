@@ -11,4 +11,4 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Run Python script
-      run: python Miscellaneous/metadataScrapper.py
+      run: python CronJob/metadataScrapper.py

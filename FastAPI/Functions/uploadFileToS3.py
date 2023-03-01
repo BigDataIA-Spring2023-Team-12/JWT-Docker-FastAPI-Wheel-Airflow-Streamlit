@@ -1,10 +1,7 @@
-import streamlit as st
 import boto3
 import io
 from decouple import config
 
-# AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
-# AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY")
 
 # function to transfer files between two AWS buckets and create a download link
 def upload_file_to_s3(file_name, prefix, source_bucket_name, target_bucket_name):
@@ -20,7 +17,8 @@ def upload_file_to_s3(file_name, prefix, source_bucket_name, target_bucket_name)
     """
     # Create an S3 client and an S3 resource
     s3_client = boto3.client('s3')
-    session = boto3.Session(aws_access_key_id="AKIAWFZMBX3F2BMPDVXS",aws_secret_access_key="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")
+    session = boto3.Session(aws_access_key_id=config("aws_access_key_id"),
+                            aws_secret_access_key=config("aws_secret_access_key"))
     s3_resource = session.resource('s3')
     # Get file from source bucket
     # Create a source object from the S3 resource
@@ -41,4 +39,3 @@ def upload_file_to_s3(file_name, prefix, source_bucket_name, target_bucket_name)
     # Construct the URL of the uploaded file
     uploaded_file_url = f"https://{target_bucket_name}.s3.amazonaws.com/{file_name}"
     return uploaded_file_url
-

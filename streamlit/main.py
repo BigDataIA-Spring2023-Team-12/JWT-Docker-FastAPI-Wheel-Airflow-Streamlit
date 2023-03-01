@@ -1,6 +1,5 @@
 import streamlit as st
 import streamlit_authenticator as stauth  # pip install streamlit-authenticator
-import sqlite3
 import plotly.graph_objects as go
 import pandas as pd
 from streamlit_option_menu import option_menu
@@ -10,35 +9,31 @@ from Functions.searchByPath import geos_search_by_path
 from Functions.searchByPath import nexrad_search_by_path
 from Functions.databaseAuth import get_user_auth_table
 from Functions.databaseAuth import register_user
-
-
+from Functions.databaseAuth import get_db
 
 st.set_page_config(
     page_title="Hello",
     page_icon="👋",
 )
 # --- CONNECT TO PASSWORD DATABAE ---
-#--- REGISTER USER ---
+# --- REGISTER USER ---
 
 # --- USER AUTHENTICATION ---
-auth_df = get_user_auth_table() 
+auth_df = get_user_auth_table()
 names = auth_df['name'].tolist()
 usernames = auth_df['username'].tolist()
 hashed_passwords = auth_df['password'].tolist()
-# usernames = ['a']
-# hashed_passwords = ['$2b$12$ygMdN2YIYMgcpixCfIQTI.6WDtnEB7Qy8kx7WoGjMPkh49jRIdxd2']
-# names = ['a']
 cookie_expiry_days = 3
 authenticator = stauth.Authenticate(
     names,
     usernames,
     hashed_passwords,
-    "file_downloader", # name of the cookie stored in a the users browser 
-    "abcdef", # random key to hash cookie signature
+    "file_downloader",  # name of the cookie stored in a the users browser
+    "abcdef",  # random key to hash cookie signature
     cookie_expiry_days
-    )
+)
 
-name,authentication_status, username = authenticator.login("Login", "main")
+name, authentication_status, username = authenticator.login("Login", "main")
 
 if authentication_status == False:
     st.error("Username/password is incorrect")
@@ -49,11 +44,11 @@ if authentication_status == None:
 if authentication_status:
     # --- OPTION MENU ----
     selected = option_menu(
-    menu_title = None,
-    options = ["Home","GEOS","NexRad","Locations"],
-    icons = ["house-door","rocket","airplane","geo-fill"],
-    default_index = 0,
-    orientation = "horizontal"
+        menu_title=None,
+        options=["Home", "GEOS", "NexRad", "Locations"],
+        icons=["house-door", "rocket", "airplane", "geo-fill"],
+        default_index=0,
+        orientation="horizontal"
     )
     if selected == "Home":
         st.write("# Welcome! 👋")
@@ -89,7 +84,7 @@ if authentication_status:
         )
 
     if selected == "GEOS":
-        connection = sqlite3.connect("../streamlit/meta_data.db")
+        connection = get_db("meta_data.db")
         cursor = connection.cursor()
 
         st.write("# GEOS Satellite Data Downloader 🛰")
@@ -104,7 +99,7 @@ if authentication_status:
             geos_search_by_filename()
 
     if selected == "NexRad":
-        connection = sqlite3.connect("../streamlit/meta_data.db")
+        connection = get_db("meta_data.db")
         cursor = connection.cursor()
 
         st.write("# NexRad Data Downloader 📡")
@@ -118,10 +113,10 @@ if authentication_status:
         if search_method == "Search by Filename":
             nexrad_search_by_filename()
 
-    if selected == "NexRad Locations":
+    if selected == "Locations":
         st.write("# Nexrad Locations in USA 📍")
-      #filename issue
-        df = pd.read_csv('../../ass-1/streamlit/nexrad_loc.csv')
+        # filename issue
+        df = pd.read_csv('./nexrad_loc.csv')
         df['text'] = 'City: ' + df['City'] + ', ' + 'State: ' + df["State"] + ', ' + 'Identifier: ' + df[
             'ICAO Location Identifier'].astype(str)
 
@@ -136,38 +131,24 @@ if authentication_status:
             title='NexRad Locations',
             geo_scope='usa',
             geo=dict(bgcolor='rgba(0,0,0,0)',
-                    lakecolor='#4E5D6C',
-                    landcolor='rgba(51,17,0,0.2)',
-                    subunitcolor='grey'),
+                     lakecolor='#4E5D6C',
+                     landcolor='rgba(51,17,0,0.2)',
+                     subunitcolor='grey'),
 
         )
         st.plotly_chart(fig, use_container_width=True)
 
-
     # ---- SIDEBAR ----
     authenticator.logout("Logout", "sidebar")
 
-    
 st.sidebar.write('## Sign up')
-name = st.sidebar.text_input('Name')   
+name = st.sidebar.text_input('Name')
 username = st.sidebar.text_input('Username')
 password = st.sidebar.text_input('Password', type='password')
 confirm_password = st.sidebar.text_input('Confirm Password', type='password')
 if password == confirm_password:
     st.sidebar.write("Password Match!")
     if st.sidebar.button('Sign up'):
-        register = register_user(name,username,password)
+        register = register_user(name, username, password)
 if password != confirm_password:
-    st.sidebar.write("Passwords don't match, Try Again!")  
-
-
-   
-
-
-
-
-
-
-
-
-
+    st.sidebar.write("Passwords don't match, Try Again!")
