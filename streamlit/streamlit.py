@@ -1,81 +1,100 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import json
+import plotly.express as px
+from datetime import datetime, timedelta
+import random
 
-# a. Plotting a line chart of count of request by each user against time (date)
-user_request_data = pd.DataFrame({
-    'user': ['user1', 'user2', 'user1', 'user3', 'user2', 'user1'],
-    'date': ['2022-01-01', '2022-01-01', '2022-01-02', '2022-01-02', '2022-01-03', '2022-01-03'],
-    'count': [10, 15, 20, 5, 8, 12]
-})
-user_request_data['date'] = pd.to_datetime(user_request_data['date'])
-user_grouped_data = user_request_data.groupby(['user', pd.Grouper(key='date', freq='D')])['count'].sum().reset_index()
-fig1, ax1 = plt.subplots()
-for user in user_grouped_data['user'].unique():
-    user_data = user_grouped_data[user_grouped_data['user'] == user]
-    ax1.plot(user_data['date'], user_data['count'], label=user)
-ax1.legend()
-ax1.set_title('Count of Requests by Each User')
-ax1.set_xlabel('Date')
-ax1.set_ylabel('Count')
-st.pyplot(fig1)
 
-# b. Metric for total API calls the previous day
-api_calls_data = {
-    "previous_day": {
-        "endpoint1": 100,
-        "endpoint2": 50,
-        "endpoint3": 200
-    },
-    "last_week": {
-        "endpoint1": 750,
-        "endpoint2": 500,
-        "endpoint3": 1000
-    },
-    "total_calls": {
-        "endpoint1": 5000,
-        "endpoint2": 3000,
-        "endpoint3": 8000
-    }
-}
-previous_day_api_calls = api_calls_data['previous_day']
-fig2, ax2 = plt.subplots()
-ax2.plot(previous_day_api_calls.keys(), previous_day_api_calls.values())
-ax2.set_title('Total API Calls in Previous Day')
-ax2.set_xlabel('Endpoint')
-ax2.set_ylabel('Count')
-st.pyplot(fig2)
+def generate_dummy_data():
+    users = ['Alice', 'Bob', 'Charlie', 'David', 'Eva', 'Frank']
+    endpoints = ['/login', '/signup', '/home', '/profile', '/settings']
+    response_codes = [200, 200, 200, 400, 500]
+    timestamps = pd.date_range(start='2022-01-01', end='2022-02-28', freq='s')
+    data = []
+    for ts in timestamps:
+        record = {}
+        record['timestamp'] = ts
+        record['user_id'] = random.choice(users)
+        record['endpoint'] = random.choice(endpoints)
+        record['response_code'] = random.choice(response_codes)
+        data.append(record)
+    return pd.DataFrame(data)
 
-# c. Metric to show total average calls during the last week
-last_week_api_calls = api_calls_data['last_week']
-fig3, ax3 = plt.subplots()
-ax3.plot(last_week_api_calls.keys(), last_week_api_calls.values())
-ax3.set_title('Total Average API Calls in Last Week')
-ax3.set_xlabel('Endpoint')
-ax3.set_ylabel('Count')
-st.pyplot(fig3)
 
-# d. Comparison of Success (200 response code) and Failed request calls (i.e., non-200 response codes)
-response_codes_data = {
-    "200": 1500,
-    "404": 200,
-    "500": 50
-}
-success_data = response_codes_data['200']
-failure_data = sum([response_codes_data[code] for code in response_codes_data.keys() if code != '200'])
-fig4, ax4 = plt.subplots()
-ax4.bar(['Success', 'Failure'], [success_data, failure_data])
-ax4.set_title('Comparison of Success and Failure Requests')
-ax4.set_xlabel('Response Code')
-ax4.set_ylabel('Count')
-st.pyplot(fig4)
+def get_prev_day_data(df):
+    prev_day = datetime.now().date() - timedelta(days=1)
+    return df[df['timestamp'].dt.date == prev_day]
 
-# e. Each endpoint total number of calls
-total_calls_data = api_calls_data['total_calls']
-fig5, ax5 = plt.subplots()
-ax5.bar(total_calls_data.keys(), total_calls_data.values())
-ax5.set_title('Total Number of Calls for Each Endpoint')
-ax5.set_xlabel('Endpoint')
-ax5.set_ylabel('Count')
-st.pyplot(fig5)
+
+def get_last_week_data(df):
+    last_week = datetime.now().date() - timedelta(days=7)
+    return df[df['timestamp'] >= last_week]
+
+
+def get_user_count_data(df):
+    return df.groupby(['user_id', pd.Grouper(key='timestamp', freq='1D')])['endpoint'].count().reset_index()
+
+
+def get_endpoint_count_data(df):
+    return df.groupby('endpoint')['user_id'].count().reset_index()
+
+
+def get_success_failed_data(df):
+    success = df[df['response_code'] == 200].shape[0]
+    failed = df[df['response_code'] != 200].shape[0]
+    return success, failed
+
+
+def main():
+    # Load data from API
+    df = generate_dummy_data()
+
+    # Calculate metrics
+    prev_day_data = get_prev_day_data(df)
+    prev_day_total_calls = prev_day_data.shape[0]
+    last_week_data = get_last_week_data(df)
+    last_week_avg_calls = last_week_data.shape[0] / 7
+    user_count_data = get_user_count_data(df)
+    endpoint_count_data = get_endpoint_count_data(df)
+    success, failed = get_success_failed_data(df)
+
+    # Create the Streamlit app
+    st.set_page_config(page_title="User Activity Dashboard", page_icon=":bar_chart:", layout="wide")
+
+    st.title('User Activity Dashboard')
+    st.write(
+        "Welcome to the User Activity Dashboard. This dashboard provides insights into user activity on your platform.")
+
+    # Display total API calls the previous day
+    col1, col2 = st.beta_columns(2)
+    with col1:
+        st.subheader('Total API calls (previous day)')
+        st.metric('API Calls', prev_day_total_calls)
+
+    # Display total average calls during the last week
+    with col2:
+        st.subheader('Total average calls (last week)')
+        st.metric('Average Calls', last_week_avg_calls)
+
+    # Display success and failed request calls
+    col3, col4 = st.beta_columns(2)
+    with col3:
+        st.subheader('Success vs. Failed Requests')
+        st.metric('Success', success)
+    with col4:
+        st.metric('Failed', failed)
+
+    # Display each endpoint total number of calls
+    st.subheader('Endpoint Calls')
+    fig1 = px.bar(endpoint_count_data, x='endpoint', y='user_id', labels={'user_id': 'Call Count'})
+    st.plotly_chart(fig1)
+
+    # Display count of request by each user against time
+    st.subheader('User Activity Over Time')
+    fig2 = px.line(user_count_data, x='timestamp', y='endpoint', color='user_id', title='User Activity Over Time')
+    fig2.update_layout(xaxis_title='Date', yaxis_title='Call Count', legend_title='User ID')
+    st.plotly_chart(fig2)
+
+
+if __name__ == '__main__':
+    main()
