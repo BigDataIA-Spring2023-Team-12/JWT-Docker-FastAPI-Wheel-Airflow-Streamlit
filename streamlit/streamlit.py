@@ -1,34 +1,29 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from datetime import datetime, timedelta
-import random
+import requests
+
+API_URL = 'http://localhost:8000'  # Replace with your API endpoint
 
 
-def generate_dummy_data():
-    users = ['Alice', 'Bob', 'Charlie', 'David', 'Eva', 'Frank']
-    endpoints = ['/login', '/signup', '/home', '/profile', '/settings']
-    response_codes = [200, 200, 200, 400, 500]
-    timestamps = pd.date_range(start='2022-01-01', end='2022-02-28', freq='s')
-    data = []
-    for ts in timestamps:
-        record = {}
-        record['timestamp'] = ts
-        record['user_id'] = random.choice(users)
-        record['endpoint'] = random.choice(endpoints)
-        record['response_code'] = random.choice(response_codes)
-        data.append(record)
-    return pd.DataFrame(data)
+def get_api_data():
+    response = requests.get(API_URL + '/activity')
+    if response.status_code == 200:
+        data = response.json()['data']
+        return pd.DataFrame(data)
+    else:
+        st.error('Error retrieving data from API')
+        st.stop()
 
 
 def get_prev_day_data(df):
-    prev_day = datetime.now().date() - timedelta(days=1)
-    return df[df['timestamp'].dt.date == prev_day]
+    prev_day = pd.Timestamp.now().normalize() - pd.Timedelta(days=1)
+    return df[df['timestamp'].dt.normalize() == prev_day]
 
 
 def get_last_week_data(df):
-    last_week = datetime.now().date() - timedelta(days=7)
-    return df[df['timestamp'] >= last_week]
+    last_week = pd.Timestamp.now().normalize() - pd.Timedelta(days=7)
+    return df[df['timestamp'].dt.normalize() >= last_week]
 
 
 def get_user_count_data(df):
@@ -47,7 +42,7 @@ def get_success_failed_data(df):
 
 def main():
     # Load data from API
-    df = generate_dummy_data()
+    df = get_api_data()
 
     # Calculate metrics
     prev_day_data = get_prev_day_data(df)
@@ -96,5 +91,5 @@ def main():
     st.plotly_chart(fig2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
