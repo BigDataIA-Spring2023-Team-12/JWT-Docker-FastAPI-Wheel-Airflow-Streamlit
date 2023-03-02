@@ -1,39 +1,43 @@
 import streamlit as st
-import streamlit_authenticator as stauth  # pip install streamlit-authenticator
 import plotly.graph_objects as go
 import pandas as pd
 from streamlit_option_menu import option_menu
-from Functions.searchByFilename import geos_search_by_filename
-from Functions.searchByFilename import nexrad_search_by_filename
-from Functions.searchByPath import geos_search_by_path
-from Functions.searchByPath import nexrad_search_by_path
-from Functions.databaseAuth import get_user_auth_table
-from Functions.databaseAuth import register_user
-from Functions.databaseAuth import get_db
+
+# df = pd.read_json(admin_data,lines=True)
+#         print(df)
 
 st.set_page_config(
     page_title="Hello",
     page_icon="👋",
 )
 # --- CONNECT TO PASSWORD DATABAE ---
-# --- REGISTER USER ---
-
 # --- USER AUTHENTICATION ---
-auth_df = get_user_auth_table()
-names = auth_df['name'].tolist()
-usernames = auth_df['username'].tolist()
-hashed_passwords = auth_df['password'].tolist()
-cookie_expiry_days = 3
-authenticator = stauth.Authenticate(
-    names,
-    usernames,
-    hashed_passwords,
-    "file_downloader",  # name of the cookie stored in a the users browser
-    "abcdef",  # random key to hash cookie signature
-    cookie_expiry_days
-)
+# --- REGISTER USER ---
+# if authentication_status != True: 
+#     landing_menu = option_menu(
+#             menu_title=None,
+#             options=["Login", "Change Password"],
+#             # icons=["house-door", "rocket", "airplane", "geo-fill"],
+#             default_index=0,
+#             orientation="horizontal"
+#         )
 
-name, authentication_status, username = authenticator.login("Login", "main")
+authentication_status = None
+st.write('## Log In')
+login_username = st.text_input('Username')
+login_password = st.text_input('Password', type='password')
+if st.button('Log In!'):
+    authentication_status = True
+    pass               #<------- Enpoint Connection
+
+st.write('## Change Password')
+fp_username = st.text_input('Username',key='Fp_username')
+fp_old_password = st.text_input('Current Password')
+fp_new_password = st.text_input('New Password')
+if st.button('Change Password'):
+    pass                #<------- Enpoint Connection
+
+
 
 if authentication_status == False:
     st.error("Username/password is incorrect")
@@ -84,9 +88,6 @@ if authentication_status:
         )
 
     if selected == "GEOS":
-        connection = get_db("meta_data.db")
-        cursor = connection.cursor()
-
         st.write("# GEOS Satellite Data Downloader 🛰")
         search_method = st.selectbox(
             "Select Search Method",
@@ -94,13 +95,11 @@ if authentication_status:
         )
 
         if search_method == "Search by Path":
-            geos_search_by_path(cursor)
+            pass
         if search_method == "Search by Filename":
-            geos_search_by_filename()
+            pass
 
     if selected == "NexRad":
-        connection = get_db("meta_data.db")
-        cursor = connection.cursor()
 
         st.write("# NexRad Data Downloader 📡")
         search_method = st.selectbox(
@@ -109,9 +108,9 @@ if authentication_status:
         )
 
         if search_method == "Search by Path":
-            nexrad_search_by_path(cursor)
+            pass
         if search_method == "Search by Filename":
-            nexrad_search_by_filename()
+            pass
 
     if selected == "Locations":
         st.write("# Nexrad Locations in USA 📍")
@@ -139,16 +138,23 @@ if authentication_status:
         st.plotly_chart(fig, use_container_width=True)
 
     # ---- SIDEBAR ----
-    authenticator.logout("Logout", "sidebar")
+
 
 st.sidebar.write('## Sign up')
 name = st.sidebar.text_input('Name')
-username = st.sidebar.text_input('Username')
-password = st.sidebar.text_input('Password', type='password')
+username = st.sidebar.text_input('Username',key='signup_username')
+plan = st.sidebar.selectbox(
+            "Select Plan",
+          ["free", "gold","platinum"]
+        )
+
+password = st.sidebar.text_input('Password', type='password',key='signup_pass')
 confirm_password = st.sidebar.text_input('Confirm Password', type='password')
+
 if password == confirm_password:
     st.sidebar.write("Password Match!")
     if st.sidebar.button('Sign up'):
-        register = register_user(name, username, password)
-if password != confirm_password:
-    st.sidebar.write("Passwords don't match, Try Again!")
+        if password != confirm_password or len(password) <= 0:
+            st.sidebar.write("Passwords don't match, Try Again!")
+        pass
+
